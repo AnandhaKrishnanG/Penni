@@ -1,0 +1,37 @@
+﻿
+-- 1. Roles Table
+CREATE TABLE IF NOT EXISTS "Roles" (
+    "Id" SERIAL PRIMARY KEY,
+    "RoleName" VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- 2. Users Table
+CREATE TABLE IF NOT EXISTS "Users" (
+    "Id" VARCHAR(50) PRIMARY KEY, -- For UUIDs or string-based IDs
+    "Username" VARCHAR(100) NOT NULL UNIQUE,
+    "Email" VARCHAR(200) NOT NULL UNIQUE,
+    "PasswordHash" VARCHAR(200) NOT NULL,
+    "IsActive" BOOLEAN NOT NULL DEFAULT TRUE,
+    "CreatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. UserRoles Table
+CREATE TABLE IF NOT EXISTS "UserRoles" (
+    "UserId" VARCHAR(50) NOT NULL,
+    "RoleId" INTEGER NOT NULL,
+    PRIMARY KEY ("UserId", "RoleId"),
+    FOREIGN KEY ("UserId") REFERENCES "Users"("Id") ON DELETE CASCADE,
+    FOREIGN KEY ("RoleId") REFERENCES "Roles"("Id") ON DELETE CASCADE
+);
+
+-- 4. UserLogins Table
+CREATE TABLE IF NOT EXISTS "UserLogins" (
+    "LoginId" SERIAL PRIMARY KEY,
+    "UserId" VARCHAR(50) NOT NULL,
+    "SessionToken" VARCHAR(200) NOT NULL,
+    "LoginTime" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "LogoutTime" TIMESTAMP,
+    "IPAddress" VARCHAR(50),
+    "DeviceInfo" VARCHAR(200),
+    FOREIGN KEY ("UserId") REFERENCES "Users"("Id") ON DELETE CASCADE
+);
