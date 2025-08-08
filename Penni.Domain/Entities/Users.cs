@@ -15,6 +15,8 @@ namespace Penni.Domain.Entities
         public string Email { get; set; }
         public string PasswordHash { get; set; }
         public bool IsActive { get; set; } = true;
+        public string? ResetToken { get; set; }
+        public DateTime? ResetTokenExpiry { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public ICollection<UserRole> UserRoles { get; set; }
     }

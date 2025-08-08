@@ -1,5 +1,4 @@
-﻿
--- 1. Roles Table
+﻿-- 1. Roles Table
 CREATE TABLE IF NOT EXISTS "Roles" (
     "Id" SERIAL PRIMARY KEY,
     "RoleName" VARCHAR(100) NOT NULL UNIQUE
@@ -12,7 +11,9 @@ CREATE TABLE IF NOT EXISTS "Users" (
     "Email" VARCHAR(200) NOT NULL UNIQUE,
     "PasswordHash" VARCHAR(200) NOT NULL,
     "IsActive" BOOLEAN NOT NULL DEFAULT TRUE,
-    "CreatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "CreatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "ResetToken" VARCHAR(200),
+    "ResetTokenExpiry" TIMESTAMP
 );
 
 -- 3. UserRoles Table

@@ -3,6 +3,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Penni.Application.Common.Interfaces;
 using Penni.Application.DTOs;
+using Penni.Domain.Entities;
+using Penni.Domain.Enum;
 using Penni.Infrastructure.DbConfig;
 using System;
 using System.Collections.Generic;
@@ -35,7 +37,7 @@ namespace Penni.Infrastructure.Services
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim("Id", user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email)
-        };
+            };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -53,6 +55,64 @@ namespace Penni.Infrastructure.Services
                 Token = new JwtSecurityTokenHandler().WriteToken(token),
                 Expiration = token.ValidTo
             };
+        }
+        public async Task RegisterAsync(RegisterDto registerDto)
+        {
+            if (await _context.Users.AnyAsync(u => u.Email.ToLower() == registerDto.Email.ToLower()))
+                throw new InvalidOperationException("Email already registered.");
+
+            var user = new Users
+            {
+                Id = Guid.NewGuid().ToString(),
+                Email = registerDto.Email,
+                Username = registerDto.Username,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password),
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            // Assign role
+            _context.UserRoles.Add(new UserRole
+            {
+                UserId = user.Id,
+                RoleId = (int)UserRoleEnum.User
+            });
+
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<string> ForgotPasswordAsync(ForgotPasswordDto dto)
+        {
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Email.ToLower() == dto.Email.ToLower());
+            if (user == null)
+                throw new InvalidOperationException("User not found.");
+
+            var resetToken = Guid.NewGuid().ToString();
+            user.ResetToken = resetToken;
+            user.ResetTokenExpiry = DateTime.UtcNow.AddHours(1);
+
+            await _context.SaveChangesAsync();
+
+            // Normally you would send the token via email here
+            return resetToken;
+        }
+
+        public async Task ResetPasswordAsync(ResetPasswordDto dto)
+        {
+            var user = await _context.Users.SingleOrDefaultAsync(
+                u => u.ResetToken == dto.Token && u.ResetTokenExpiry > DateTime.UtcNow);
+
+            if (user == null)
+                throw new InvalidOperationException("Invalid or expired token.");
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+            user.ResetToken = null;
+            user.ResetTokenExpiry = null;
+
+            await _context.SaveChangesAsync();
         }
     }
 }
